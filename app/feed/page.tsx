@@ -16,6 +16,7 @@ type Post = {
   id: number;
   content: string;
   emoji: string;
+  image_url: string;
   name: string;
   username: string;
   avatar_url: string;
@@ -28,6 +29,7 @@ export default function FeedPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [content, setContent] = useState("");
   const [emoji, setEmoji] = useState("💭");
+  const [imageUrl, setImageUrl] = useState("");
   const [user, setUser] = useState<any>(null);
   const [replyText, setReplyText] = useState<Record<number, string>>({});
 
@@ -50,6 +52,23 @@ export default function FeedPage() {
     setPosts(data);
   }
 
+  async function uploadPostImage(file: File) {
+    const formData = new FormData();
+
+    formData.append("file", file);
+
+    const response = await fetch("/api/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      setImageUrl(data.url);
+    }
+  }
+
   async function createPost() {
     if (!content.trim() || !user) return;
 
@@ -61,11 +80,14 @@ export default function FeedPage() {
       body: JSON.stringify({
         content,
         emoji,
+        imageUrl,
         authorId: user.id,
       }),
     });
 
     setContent("");
+    setImageUrl("");
+
     loadPosts();
   }
 
@@ -139,6 +161,27 @@ export default function FeedPage() {
             />
           </div>
 
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+
+              if (file) {
+                uploadPostImage(file);
+              }
+            }}
+            className="w-full rounded-xl bg-zinc-800 p-3 text-sm mb-3"
+          />
+
+          {imageUrl && (
+            <img
+              src={imageUrl}
+              alt="Preview"
+              className="mb-3 max-h-80 w-full rounded-2xl object-cover"
+            />
+          )}
+
           <button
             onClick={createPost}
             className="w-full rounded-xl bg-violet-600 p-3 font-bold hover:bg-violet-500 transition"
@@ -168,20 +211,29 @@ export default function FeedPage() {
 
                 <div>
                   <p className="font-bold">{post.name}</p>
+
                   <button
-  onClick={() =>
-    (window.location.href = `/u/${post.username}`)
-  }
-  className="text-zinc-400 text-sm hover:text-violet-400 transition"
->
-  @{post.username}
-</button>
+                    onClick={() =>
+                      (window.location.href = `/u/${post.username}`)
+                    }
+                    className="text-zinc-400 text-sm hover:text-violet-400 transition"
+                  >
+                    @{post.username}
+                  </button>
                 </div>
               </div>
 
               <p className="text-2xl mb-2">{post.emoji}</p>
 
               <p className="text-lg">{post.content}</p>
+
+              {post.image_url && (
+                <img
+                  src={post.image_url}
+                  alt="Imagem do post"
+                  className="mt-4 max-h-96 w-full rounded-2xl object-cover border border-zinc-800"
+                />
+              )}
 
               <div className="flex gap-2 mt-4">
                 <button

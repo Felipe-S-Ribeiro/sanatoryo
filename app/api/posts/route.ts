@@ -8,6 +8,7 @@ export async function GET() {
         posts.id,
         posts.content,
         posts.emoji,
+        posts.image_url,
         posts.created_at,
         users.name,
         users.username,
@@ -21,7 +22,11 @@ export async function GET() {
         ON likes.post_id = posts.id
       LEFT JOIN replies
         ON replies.post_id = posts.id
-      GROUP BY posts.id, users.name, users.username, users.avatar_url
+      GROUP BY
+        posts.id,
+        users.name,
+        users.username,
+        users.avatar_url
       ORDER BY posts.created_at DESC
     `);
 
@@ -64,7 +69,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const { content, emoji, authorId } = body;
+    const { content, emoji, authorId, imageUrl } = body;
 
     if (!content || !authorId) {
       return NextResponse.json(
@@ -75,11 +80,11 @@ export async function POST(request: Request) {
 
     const result = await db.query(
       `
-      INSERT INTO posts (content, emoji, author_id)
-      VALUES ($1, $2, $3)
+      INSERT INTO posts (content, emoji, author_id, image_url)
+      VALUES ($1, $2, $3, $4)
       RETURNING *
       `,
-      [content, emoji, authorId]
+      [content, emoji, authorId, imageUrl || null]
     );
 
     return NextResponse.json(result.rows[0]);

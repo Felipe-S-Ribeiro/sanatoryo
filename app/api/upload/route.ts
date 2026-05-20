@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { writeFile } from "fs/promises";
-import path from "path";
+import cloudinary from "../../../src/lib/cloudinary";
 
 export async function POST(request: Request) {
   try {
@@ -17,20 +16,15 @@ export async function POST(request: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const extension = file.name.split(".").pop();
-    const fileName = `${Date.now()}.${extension}`;
+    const base64 = buffer.toString("base64");
+    const dataUri = `data:${file.type};base64,${base64}`;
 
-    const uploadPath = path.join(
-      process.cwd(),
-      "public",
-      "uploads",
-      fileName
-    );
-
-    await writeFile(uploadPath, buffer);
+    const upload = await cloudinary.uploader.upload(dataUri, {
+      folder: "sanatoryo/uploads",
+    });
 
     return NextResponse.json({
-      url: `/uploads/${fileName}`,
+      url: upload.secure_url,
     });
   } catch (error) {
     console.error(error);
